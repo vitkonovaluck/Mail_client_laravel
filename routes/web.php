@@ -7,10 +7,23 @@ use Inertia\Inertia;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
-        'canLogin' => Route::has('login'),
-        'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'features' => [
+            'Безпечне зберігання листів',
+            '20GB сховища для пошти',
+            'Захист від спаму та вірусів',
+            'Можливість створення аліасів',
+            'Доступ з будь-якого пристрою'
+        ],
+        'pricing' => [
+            'basic' => [
+                'price' => '0',
+                'features' => ['5GB сховища', '1 домен', '10 аліасів']
+            ],
+            'pro' => [
+                'price' => '99',
+                'features' => ['20GB сховища', '3 домени', 'необмежені аліаси']
+            ]
+        ]
     ]);
 });
 
