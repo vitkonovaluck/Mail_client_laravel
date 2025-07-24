@@ -23,6 +23,9 @@ Route::get('/', function () {
                 'price' => '99',
                 'features' => ['20GB сховища', '3 домени', 'необмежені аліаси']
             ]
+        ],
+        'auth' => [
+            'user' => auth()->user()
         ]
     ]);
 });

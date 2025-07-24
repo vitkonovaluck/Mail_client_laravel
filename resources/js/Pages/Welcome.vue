@@ -17,8 +17,15 @@ defineProps({
             <div class="flex justify-between items-center">
                 <div class="text-2xl font-bold text-blue-600">MailService</div>
                 <nav class="flex space-x-8">
-                    <Link href="/login" class="text-gray-600 hover:text-blue-600">Увійти</Link>
-                    <Link href="/register" class="text-gray-600 hover:text-blue-600">Реєстрація</Link>
+                    <template v-if="auth.user">
+                        <PrimaryButton href="/dashboard" class="px-4 py-2">
+                            Перейти до пошти
+                        </PrimaryButton>
+                    </template>
+                    <template v-else>
+                        <Link href="/login" class="text-gray-600 hover:text-blue-600">Увійти</Link>
+                        <Link href="/register" class="text-gray-600 hover:text-blue-600">Реєстрація</Link>
+                    </template>
                 </nav>
             </div>
         </header>
