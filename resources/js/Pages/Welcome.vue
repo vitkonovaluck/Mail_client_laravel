@@ -4,7 +4,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 
 defineProps({
     features: Array,
-    pricing: Object
+    pricing: Object,
+    auth: Object
 });
 </script>
 

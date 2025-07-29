@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Crypt;
 use Webklex\IMAP\Facades\Client;
 use App\Models\VirtualUser;
 use App\Models\Email;
@@ -25,34 +26,32 @@ class ImportEmails extends Command
                 'host'          => 'mail.ce.vn.ua',
                 'port'          => 993,
                 'encryption'    => 'ssl',
-                'validate_cert' => true,
+                'validate_cert' => false,
                 'username'      => $user->email,
-                'password'      => 'informix', // потрібно знати пароль!
+                'password'      => Crypt::decryptString($user->epassword), // потрібно знати пароль!
                 'protocol'      => 'imap'
             ]);
-            $this->info("Create client");
+
             try {
-                $this->info("After Connect client");
                 $client->connect();
-                $this->info("Connect client");
-//                $folder = $client->getFolder('INBOX');
-//                $messages = $folder->messages()->unseen()->limit(10)->get();
-//
-//                foreach ($messages as $message) {
-//                    Email::create([
-//                        'virtual_user_id' => $user->id,
-//                        'from' => $message->getFrom()[0]->mail ?? '',
-//                        'to' => $user->email,
-//                        'subject' => $message->getSubject(),
-//                        'body' => $message->getTextBody(),
-//                        'received_at' => Carbon::parse($message->getDate()),
-//                    ]);
-//                }
+                $folder = $client->getFolder('INBOX');
+                $messages = $folder->messages()->unseen()->limit(10)->get();
+
+                foreach ($messages as $message) {
+                    Email::create([
+                        'virtual_user_id' => $user->id,
+                        'from' => $message->getFrom()[0]->mail ?? '',
+                        'to' => $user->email,
+                        'subject' => $message->getSubject(),
+                        'body' => $message->getTextBody(),
+                        'received_at' => Carbon::parse($message->getDate()),
+                    ]);
+                }
 
                 $client->disconnect();
                 $this->info("Disconnect client");
             } catch (\Throwable $e) {
-                $this->error("Помилка імпорту: " . $e->getMessage());
+                $this->error("Помилка імпорту: " . $e);
                 continue;
             }
         }

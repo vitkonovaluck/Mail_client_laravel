@@ -16,6 +16,7 @@ return new class extends Migration
             $table->foreignId('domain_id')->constrained('virtual_domains')->onDelete('cascade');
             $table->string('email')->unique(); // user@example.com
             $table->string('password'); // {SHA512-CRYPT} або інший хеш
+            $table->string('epassword'); //Скнзе
             $table->timestamps();
         });
     }
