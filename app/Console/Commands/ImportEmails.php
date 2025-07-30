@@ -48,7 +48,7 @@ class ImportEmails extends Command
                     foreach ($messages as $message) {
                         // Генерація унікального message_id
                         $messageId = $this->generateMessageId($message, $user->email);
-
+                        $this->info($messageId);
                         Email::updateOrCreate(
                             ['message_id' => $messageId],
                             [
