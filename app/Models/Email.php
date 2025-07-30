@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Email extends Model
 {
     protected $fillable = [
+        'message_id',
         'virtual_user_id',
         'from',
         'to',
