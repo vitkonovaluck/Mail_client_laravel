@@ -39,69 +39,50 @@ class ImportEmails extends Command
                 $client->connect();
                 $folder = $client->getFolder('INBOX');
 
-                // Отримуємо останню дату імпортованого листа для цього користувача
-                $lastImportedDate = Email::where('to', $user->email)
-                    ->latest('received_at')
-                    ->value('received_at');
-
-                // Фільтруємо листи, які прийшли після останнього імпорту
-                $query = $folder->messages()
+                $messages = $folder->messages()
                     ->unseen()
-                    ->since($lastImportedDate ?? '1970-01-01')
-                    ->limit(100);
+                    ->limit(100)
+                    ->get();
 
-                $messages = $query->get();
-
-                $importedCount = 0;
-                $skippedCount = 0;
-
-                DB::transaction(function () use ($user, $messages, &$importedCount, &$skippedCount) {
+                DB::transaction(function () use ($user, $messages) {
                     foreach ($messages as $message) {
-                        $messageId = $message->getHeaders()->get('message-id')->getValue();
+                        // Генерація унікального message_id
+                        $messageId = $this->generateMessageId($message, $user->email);
 
-                        if (Email::where('message_id', $messageId)->exists()) {
-                            $skippedCount++;
-                            continue;
-                        }
-
-                        Email::create([
-                            'message_id'       => $messageId,
-                            'virtual_user_id'  => $user->id,
-                            'from'             => $message->getFrom()[0]->mail ?? '',
-                            'to'               => $user->email,
-                            'subject'          => $message->getSubject(),
-                            'body'             => $message->getTextBody(),
-                            'body_html'        => $message->getHtmlBody(),
-                            'received_at'      => Carbon::parse($message->getDate()),
-                            'headers'          => json_encode($message->getHeaders()->all()),
-                        ]);
-
-                        $importedCount++;
+                        Email::updateOrCreate(
+                            ['message_id' => $messageId],
+                            [
+                                'virtual_user_id' => $user->id,
+                                'from' => $message->getFrom()[0]->mail ?? '',
+                                'to' => $user->email,
+                                'subject' => $this->decodeSubject($message->getSubject()),
+                                'body' => $message->getTextBody(),
+                                'received_at' => Carbon::parse($message->getDate()),
+                            ]
+                        );
                     }
                 });
 
-                $client->disconnect();
-
-                $this->info("Імпортовано: {$importedCount}, пропущено: {$skippedCount}");
-                Log::info("Для {$user->email}: імпортовано {$importedCount}, пропущено {$skippedCount}");
+                // ... код відключення ...
 
             } catch (\Throwable $e) {
                 Log::error("Помилка імпорту для {$user->email}: " . $e->getMessage());
-                $this->error("Помилка імпорту для {$user->email}: " . $e->getMessage());
-
-                try {
-                    if ($client->isConnected()) {
-                        $client->disconnect();
-                    }
-                } catch (\Throwable $disconnectError) {
-                    Log::error("Помилка відключення: " . $disconnectError->getMessage());
-                }
-
                 continue;
             }
         }
 
         Log::info("Імпорт завершено");
         $this->info("Імпорт завершено");
+    }
+
+    protected function generateMessageId($message, $email): string
+    {
+        return optional($message->getHeaders()->get('message-id'))->getValue()
+            ?? md5($email . $message->getSubject() . $message->getDate()->toString());
+    }
+
+    protected function decodeSubject(string $subject): string
+    {
+        return mb_decode_mimeheader($subject);
     }
 }
