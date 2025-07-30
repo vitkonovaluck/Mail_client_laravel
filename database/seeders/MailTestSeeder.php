@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\VirtualAlias;
 use App\Models\VirtualDomain;
 use App\Models\VirtualUser;
+use App\Services\DovecotPasswordService;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Crypt;
@@ -23,7 +24,7 @@ class MailTestSeeder extends Seeder
         VirtualUser::create([
             'domain_id' => $domain->id,
             'email' => 'admin@ce.vn.ua',
-            'password' => '{SHA512-CRYPT}$6$fzxwiIS0WImrje/k$mWVoSQKdxQcX3CBQ1/59LiAZsrHWJM3a52Rq2XbI.b6AQA/cspwnJXDxkMx/sQYIBeTjR0kV1Kwl8g3m4qA8K.',
+            'password' => DovecotPasswordService::hash('informix'),
             'epassword' => Crypt::encryptString('informix'),
         ]);
 
@@ -43,7 +44,7 @@ class MailTestSeeder extends Seeder
         VirtualUser::create([
             'domain_id' => $domain->id,
             'email' => 'admin@microcode.vn.ua',
-            'password' => '{SHA512-CRYPT}$6$fzxwiIS0WImrje/k$mWVoSQKdxQcX3CBQ1/59LiAZsrHWJM3a52Rq2XbI.b6AQA/cspwnJXDxkMx/sQYIBeTjR0kV1Kwl8g3m4qA8K.',
+            'password' => DovecotPasswordService::hash('informix'),
             'epassword' => Crypt::encryptString('informix'),
         ]);
 
