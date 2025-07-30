@@ -30,31 +30,72 @@ class ImportEmails extends Command
                 'encryption'    => 'ssl',
                 'validate_cert' => false,
                 'username'      => $user->email,
-                'password'      => Crypt::decryptString($user->epassword), // потрібно знати пароль!
+                'password'      => Crypt::decryptString($user->epassword),
                 'protocol'      => 'imap'
             ]);
 
             try {
                 $client->connect();
                 $folder = $client->getFolder('INBOX');
-                $messages = $folder->messages()->unseen()->limit(10)->get();
 
-                foreach ($messages as $message) {
-                    Email::create([
-                        'virtual_user_id' => $user->id,
-                        'from' => $message->getFrom()[0]->mail ?? '',
-                        'to' => $user->email,
-                        'subject' => $message->getSubject(),
-                        'body' => $message->getTextBody(),
-                        'received_at' => Carbon::parse($message->getDate()),
-                    ]);
-                }
+                // Отримуємо останню дату імпортованого листа для цього користувача
+                $lastImportedDate = Email::where('to', $user->email)
+                    ->latest('received_at')
+                    ->value('received_at');
+
+                // Фільтруємо листи, які прийшли після останнього імпорту
+                $query = $folder->messages()
+                    ->unseen()
+                    ->since($lastImportedDate ?? '1970-01-01')
+                    ->limit(100);
+
+                $messages = $query->get();
+
+                $importedCount = 0;
+                $skippedCount = 0;
+
+                DB::transaction(function () use ($user, $messages, &$importedCount, &$skippedCount) {
+                    foreach ($messages as $message) {
+                        $messageId = $message->getHeaders()->get('message-id')->getValue();
+
+                        if (Email::where('message_id', $messageId)->exists()) {
+                            $skippedCount++;
+                            continue;
+                        }
+
+                        Email::create([
+                            'message_id'       => $messageId,
+                            'virtual_user_id'  => $user->id,
+                            'from'             => $message->getFrom()[0]->mail ?? '',
+                            'to'               => $user->email,
+                            'subject'          => $message->getSubject(),
+                            'body'             => $message->getTextBody(),
+                            'body_html'        => $message->getHtmlBody(),
+                            'received_at'      => Carbon::parse($message->getDate()),
+                            'headers'          => json_encode($message->getHeaders()->all()),
+                        ]);
+
+                        $importedCount++;
+                    }
+                });
 
                 $client->disconnect();
 
+                $this->info("Імпортовано: {$importedCount}, пропущено: {$skippedCount}");
+                Log::info("Для {$user->email}: імпортовано {$importedCount}, пропущено {$skippedCount}");
+
             } catch (\Throwable $e) {
-                Log::error("Помилка імпорту: " . $e);;
-                $this->error("Помилка імпорту: " . $e);
+                Log::error("Помилка імпорту для {$user->email}: " . $e->getMessage());
+                $this->error("Помилка імпорту для {$user->email}: " . $e->getMessage());
+
+                try {
+                    if ($client->isConnected()) {
+                        $client->disconnect();
+                    }
+                } catch (\Throwable $disconnectError) {
+                    Log::error("Помилка відключення: " . $disconnectError->getMessage());
+                }
+
                 continue;
             }
         }
