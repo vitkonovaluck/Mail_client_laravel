@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\Log;
 use Webklex\IMAP\Facades\Client;
 use App\Models\VirtualUser;
 use App\Models\Email;
@@ -19,6 +20,7 @@ class ImportEmails extends Command
         $users = VirtualUser::all();
 
         foreach ($users as $user) {
+            Log::info("Імпорт для: {$user->email}");
             $this->info("Імпорт для: {$user->email}");
 
             // Підключення до IMAP
@@ -49,13 +51,15 @@ class ImportEmails extends Command
                 }
 
                 $client->disconnect();
-                $this->info("Disconnect client");
+
             } catch (\Throwable $e) {
+                Log::error("Помилка імпорту: " . $e);;
                 $this->error("Помилка імпорту: " . $e);
                 continue;
             }
         }
 
+        Log::info("Імпорт завершено");
         $this->info("Імпорт завершено");
     }
 }
