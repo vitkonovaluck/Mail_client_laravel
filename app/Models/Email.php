@@ -20,4 +20,15 @@ class Email extends Model
     {
         return $this->belongsTo(VirtualUser::class);
     }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class);
+    }
+
+    public function folder()
+    {
+        return $this->belongsTo(Folder::class);
+    }
+
 }

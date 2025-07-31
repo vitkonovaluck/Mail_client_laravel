@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Folder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
@@ -36,24 +37,10 @@ class ImportEmails extends Command
 
             try {
                 $client->connect();
-                $folder = $client->getFolder('INBOX');
-                $messages = $folder->messages()->unseen()->limit(10)->get();
 
-                foreach ($messages as $message) {
-                    $messageId = $this->generateMessageId($message);
-
-                    Email::firstOrCreate(
-                        ['message_id' => $messageId],
-                        [
-                            'virtual_user_id' => $user->id,
-                            'from' => $message->getFrom()[0]->mail ?? 'unknown',
-                            'to' => $user->email,
-                            'subject' => $this->decodeSubject($message->getSubject()),
-                            'body' => $message->getTextBody() ?: '',
-                            'received_at' => Carbon::parse($message->getDate()),
-                        ]
-                    );                }
-
+                $this->getMessageUser($client, 'INBOX', 'inbox', $user);
+                $this->getMessageUser($client, 'Sent', 'sent', $user);
+                $this->getMessageUser($client, 'Trash', 'trash', $user);
                 $client->disconnect();
 
             } catch (\Throwable $e) {
@@ -61,9 +48,35 @@ class ImportEmails extends Command
                 $this->error("Помилка імпорту: " . $e);
                 continue;
             }
+
         }
 
         $this->info("Імпорт завершено");
+    }
+
+    public function getMessageUser($client, $folderName, $folderSlug, $user)
+    {
+        $folder = $client->getFolder($folderName);
+        $folderId = Folder::where('slug', $folderSlug)->first()->id;
+
+        $messages = $folder->messages()->unseen()->limit(50)->get();
+
+            foreach ($messages as $message) {
+                $messageId = $this->generateMessageId($message);
+
+                Email::firstOrCreate(
+                    ['message_id' => $messageId],
+                    [
+                        'folder_id' => $folderId,
+                        'virtual_user_id' => $user->id,
+                        'from' => $message->getFrom()[0]->mail ?? 'unknown',
+                        'to' => $user->email,
+                        'subject' => $this->decodeSubject($message->getSubject()),
+                        'body' => $message->getTextBody() ?: '',
+                        'received_at' => Carbon::parse($message->getDate()),
+                    ]
+                );
+            }
     }
 
     private function generateMessageId($message): string
