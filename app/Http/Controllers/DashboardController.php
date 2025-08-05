@@ -16,11 +16,6 @@ class DashboardController extends Controller
     {
         $user = auth()->user();
 
-        dd(Folder::withCount(['emails' => fn($q) => $q->where('virtual_user_id', $user->id)])
-            ->where('user_id', $user->id)
-            ->orWhere('is_system', true)
-            ->orderBy('name')
-            ->orderBy('is_system', 'desc')->toSql());
         return Inertia::render('Emails/Index', [
             'folders' => Folder::withCount(['emails' => fn($q) => $q->where('virtual_user_id', $user->id)])
                 ->where('user_id', $user->id)
@@ -30,7 +25,7 @@ class DashboardController extends Controller
                 ->get(),
 
             'emails' => Email::query()
-                ->with(['categories', 'folder'])
+                ->with(['folder'])
                 ->where('virtual_user_id', $user->id)
                 ->where('folder_id', request('folder_id', 1)) // 1 - inbox
                 ->orderBy('received_at', 'desc')
@@ -62,7 +57,31 @@ class DashboardController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Знаходимо email з вказаним ID
+        $email = Email::with(['categories'])
+            ->findOrFail($id);
+
+        // Позначаємо email як прочитаний
+        if (!$email->is_read) {
+            $email->update(['is_read' => true]);
+        }
+
+        // Отримуємо попередній та наступний email для навігації
+        $previousEmail = Email::where('id', '<', $id)
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $nextEmail = Email::where('id', '>', $id)
+            ->orderBy('id', 'asc')
+            ->first();
+
+        return inertia('Emails/Show', [
+            'email' => $email,
+            'navigation' => [
+                'previous' => $previousEmail ? $previousEmail->id : null,
+                'next' => $nextEmail ? $nextEmail->id : null,
+            ],
+        ]);
     }
 
     /**

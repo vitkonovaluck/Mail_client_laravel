@@ -180,12 +180,17 @@ const showingNavigationDropdown = ref(false);
             </nav>
 
             <!-- Page Heading -->
-            <header
-                class="bg-white shadow"
-                v-if="$slots.header"
-            >
-                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+            <header class="bg-white shadow" v-if="$slots.header">
+                <div class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center">
                     <slot name="header" />
+                    <div class="flex space-x-2">
+                        <Link
+                            :href="route('emails.create')"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded"
+                        >
+                            Створити
+                        </Link>
+                    </div>
                 </div>
             </header>
 

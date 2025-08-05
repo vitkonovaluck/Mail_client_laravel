@@ -31,8 +31,16 @@ Route::get('/', function () {
     ]);
 });
 
-Route::get('/dashboard', [DashboardController::class,'index'])->middleware(['auth', 'verified'])->name('dashboard');
-
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class,'index'])->middleware(['auth', 'verified'])->name('dashboard');
+    Route::get('/emails/{email}', [DashboardController::class, 'show'])->name('emails.show');
+    Route::get('/emails/create', [DashboardController::class, 'create'])->name('emails.create');
+    Route::post('/emails', [DashboardController::class, 'store'])->name('emails.store');
+    Route::get('/emails/{email}/forward', [DashboardController::class, 'forward'])->name('emails.forward');
+    Route::post('/emails/{email}/mark-unread', [DashboardController::class, 'markUnread'])->name('emails.mark-unread');
+    Route::delete('/emails/{email}', [DashboardControllerr::class, 'destroy'])->name('emails.destroy');
+    Route::post('/emails/{email}/move', [DashboardController::class, 'move'])->name('emails.move');
+});
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
