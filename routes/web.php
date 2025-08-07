@@ -35,6 +35,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/dashboard', [DashboardController::class,'index'])->middleware(['auth', 'verified'])->name('dashboard');
     Route::get('/emails/{email}', [DashboardController::class, 'show'])->name('emails.show');
     Route::get('/emails/create', [DashboardController::class, 'create'])->name('emails.create');
+    Route::post('/emails/send', [DashboardController::class, 'store'])->name('emails.send');
     Route::post('/emails', [DashboardController::class, 'store'])->name('emails.store');
     Route::get('/emails/{email}/forward', [DashboardController::class, 'forward'])->name('emails.forward');
     Route::post('/emails/{email}/mark-unread', [DashboardController::class, 'markUnread'])->name('emails.mark-unread');

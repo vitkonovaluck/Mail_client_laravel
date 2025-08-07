@@ -49,7 +49,39 @@ class DashboardController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'to' => 'required|email',
+            'subject' => 'required|string|max:255',
+            'body' => 'required|string',
+            'attachments.*' => 'file|max:10240', // 10MB max
+        ]);
+
+        // Обробка вкладень
+        $attachments = [];
+        if ($request->hasFile('attachments')) {
+            foreach ($request->file('attachments') as $file) {
+                $path = $file->store('attachments');
+                $attachments[] = [
+                    'path' => storage_path('app/'.$path),
+                    'name' => $file->getClientOriginalName(),
+                    'mime' => $file->getClientMimeType()
+                ];
+            }
+        }
+
+        // Додавання завдання в чергу
+        SendEmailJob::dispatch(
+            auth()->user(),
+            [
+                'to' => $validated['to'],
+                'subject' => $validated['subject'],
+                'body' => $validated['body'],
+                'attachments' => $attachments
+            ]
+        )->onQueue('emails');
+
+        return redirect()->back()
+            ->with('success', 'Лист додано до черги на відправку!');
     }
 
     /**
