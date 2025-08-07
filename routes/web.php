@@ -39,7 +39,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/emails', [DashboardController::class, 'store'])->name('emails.store');
     Route::get('/emails/{email}/forward', [DashboardController::class, 'forward'])->name('emails.forward');
     Route::post('/emails/{email}/mark-unread', [DashboardController::class, 'markUnread'])->name('emails.mark-unread');
-    Route::delete('/emails/{email}', [DashboardControllerr::class, 'destroy'])->name('emails.destroy');
+    Route::delete('/emails/{email}', [DashboardController::class, 'destroy'])->name('emails.destroy');
     Route::post('/emails/{email}/move', [DashboardController::class, 'move'])->name('emails.move');
 });
 Route::middleware('auth')->group(function () {
